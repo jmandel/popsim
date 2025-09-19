@@ -1,0 +1,47 @@
+{
+  "version": "0.4",
+  "seed": 1729,
+  "model": "handcrafted",
+  "categories": [
+    {
+      "name": "Demographics",
+      "description": "Baseline demographic traits and socioeconomic context",
+      "targetCount": 3,
+      "durabilityMix": { "intrinsic": 0.7, "semi_durable": 0.3, "stateful": 0 }
+    },
+    {
+      "name": "Vitals",
+      "description": "Clinical vital signs and cardiometabolic measures",
+      "targetCount": 4,
+      "durabilityMix": { "intrinsic": 0.1, "semi_durable": 0.8, "stateful": 0.1 }
+    }
+  ],
+  "attributeModules": [
+    {
+      "id": "DemographicsCore",
+      "path": "worlds/handcrafted/attributes/demographics.ts",
+      "category": "Demographics",
+      "declaredCount": 3
+    },
+    {
+      "id": "VitalsBaseline",
+      "path": "worlds/handcrafted/attributes/vitals.ts",
+      "category": "Vitals",
+      "declaredCount": 4
+    }
+  ],
+  "diseaseModules": [
+    {
+      "id": "MetabolicSyndrome",
+      "path": "worlds/handcrafted/diseases/metabolic.ts",
+      "name": "Metabolic Syndrome"
+    }
+  ],
+  "attributeCatalogPath": "worlds/handcrafted/attribute_catalog.json",
+  "acceptance": {
+    "attributesAccepted": 2,
+    "attributesAttempted": 2,
+    "diseasesAccepted": 1,
+    "diseasesAttempted": 1
+  }
+}

@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "build-world": "bun src/index.ts build-world",
-    "simulate": "bun src/index.ts simulate --n 1000"
+    "simulate": "bun src/index.ts simulate --n 1000",
+    "test": "bun test"
   },
   "dependencies": {
     "openai": "^4.57.0",

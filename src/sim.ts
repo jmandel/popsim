@@ -1,3 +1,6 @@
+import { mkdir } from "node:fs/promises";
+import { resolve } from "node:path";
+
 import { WorldFile, PatientSnapshot, SimContext, Event, AttrValue, AttrLimits } from "./contracts";
 
 class RNG {
@@ -9,8 +12,8 @@ class RNG {
     const z=Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); return mean+sd*z; }
 }
 class PQ<T>{ data:{t:number;item:T}[]=[]; push(t:number,item:T){const r={t,item}; let lo=0,hi=this.data.length;
-  while(lo<hi){ const mid=(lo+hi)>>>1; if(this.data[mid].t<=t) lo=mid+1; else hi=mid; } this.data.splice(lo,0,r);}
-  pop(){return this.data.shift();} get length(){return this.data.length;} }
+  while(lo<hi){ const mid=(lo+hi)>>>1; if(this.data[mid].t<=t) lo=mid+1; else hi=mid; } this.data.splice(lo,0,r);} 
+  pop(){ const entry = this.data.shift(); return entry ? entry.item : undefined; } get length(){return this.data.length;} }
 
 type PendingEv = { t: number; e: Event };
 type DiseaseRuntime = { id: string; mod: any };
@@ -45,12 +48,12 @@ export async function runSimulation(opts: SimulationOptions) {
   // Load modules
   const attrMods = [];
   for (const am of opts.world.attributeModules) {
-    const mod = (await import("file://" + Bun.cwd() + "/" + am.path)).default;
+    const mod = (await import("file://" + resolve(am.path))).default;
     attrMods.push(mod);
   }
   const diseaseMods: DiseaseRuntime[] = [];
   for (const dm of opts.world.diseaseModules) {
-    const mod = (await import("file://" + Bun.cwd() + "/" + dm.path)).default;
+    const mod = (await import("file://" + resolve(dm.path))).default;
     diseaseMods.push({ id: dm.id, mod });
   }
 
@@ -141,6 +144,7 @@ export async function runSimulation(opts: SimulationOptions) {
   const deathFrac = out.filter((p:any)=>p.events.some((e:any)=>e.type==="death")).length / Math.max(1,out.length);
   const dxCount = out.reduce((a:any,p:any)=>a+p.events.filter((e:any)=>e.type==="diagnosis").length,0);
   const metrics = { patients: out.length, avgEventsPerPatient: avgEvents, diagnosisEvents: dxCount, deathFraction: deathFrac };
+  await mkdir("out/sim", { recursive: true });
   await Bun.write("out/sim/summary.json", JSON.stringify(metrics, null, 2));
 
   return out;
