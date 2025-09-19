@@ -1,0 +1,59 @@
+{
+  "catalog": [
+    {
+      "key": "AGE_YEARS",
+      "type": "number",
+      "durability": "intrinsic",
+      "limits": { "min": 0, "max": 120 },
+      "description": "Age in years",
+      "category": "Demographics"
+    },
+    {
+      "key": "SEX_AT_BIRTH",
+      "type": "string",
+      "durability": "intrinsic",
+      "description": "Sex assigned at birth",
+      "category": "Demographics"
+    },
+    {
+      "key": "HOUSEHOLD_INCOME",
+      "type": "number",
+      "durability": "semi_durable",
+      "limits": { "min": 0, "max": 250000 },
+      "description": "Estimated household income in USD",
+      "category": "Demographics"
+    },
+    {
+      "key": "BMI",
+      "type": "number",
+      "durability": "semi_durable",
+      "limits": { "min": 12, "max": 60 },
+      "description": "Body mass index",
+      "category": "Vitals"
+    },
+    {
+      "key": "SYSTOLIC_BP",
+      "type": "number",
+      "durability": "semi_durable",
+      "limits": { "min": 90, "max": 200 },
+      "description": "Systolic blood pressure",
+      "category": "Vitals"
+    },
+    {
+      "key": "DIASTOLIC_BP",
+      "type": "number",
+      "durability": "semi_durable",
+      "limits": { "min": 50, "max": 130 },
+      "description": "Diastolic blood pressure",
+      "category": "Vitals"
+    },
+    {
+      "key": "HDL_CHOLESTEROL",
+      "type": "number",
+      "durability": "semi_durable",
+      "limits": { "min": 20, "max": 120 },
+      "description": "HDL cholesterol",
+      "category": "Vitals"
+    }
+  ]
+}

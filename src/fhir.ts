@@ -24,7 +24,9 @@ export function toFHIRLite(patient: any) {
     }));
   return { patient: patientR, observations, conditions };
 }
-function isoAtOffset(birthYear:number, tYears:number) {
-  const y = birthYear + Math.floor(tYears);
-  return `${y}-07-01";
+function isoAtOffset(birthYear: number, tYears: number) {
+  const base = new Date(Date.UTC(birthYear, 0, 1));
+  const days = Math.round(tYears * 365.25);
+  base.setUTCDate(base.getUTCDate() + days);
+  return base.toISOString().slice(0, 10);
 }
