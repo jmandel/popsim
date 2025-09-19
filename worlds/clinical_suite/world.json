@@ -1,0 +1,39 @@
+{
+  "version": "0.4",
+  "seed": 24680,
+  "model": "hand-authored-clinical-suite",
+  "categories": [
+    {
+      "name": "Demographics",
+      "description": "Demographic context, socioeconomic status, and family history",
+      "targetCount": 10,
+      "durabilityMix": { "intrinsic": 0.6, "semi_durable": 0.4, "stateful": 0 }
+    },
+    {
+      "name": "Lifestyle",
+      "description": "Health behaviors, exposures, and protective factors",
+      "targetCount": 8,
+      "durabilityMix": { "intrinsic": 0.1, "semi_durable": 0.8, "stateful": 0.1 }
+    },
+    {
+      "name": "Clinical Baseline",
+      "description": "Baseline vitals and laboratory markers influenced by lifestyle and disease",
+      "targetCount": 13,
+      "durabilityMix": { "intrinsic": 0.1, "semi_durable": 0.6, "stateful": 0.3 }
+    }
+  ],
+  "attributeModules": [
+    { "id": "DemographicsExtended", "path": "worlds/clinical_suite/attributes/demographics.ts", "category": "Demographics", "declaredCount": 10 },
+    { "id": "LifestyleProfile", "path": "worlds/clinical_suite/attributes/lifestyle.ts", "category": "Lifestyle", "declaredCount": 8 },
+    { "id": "ClinicalBaseline", "path": "worlds/clinical_suite/attributes/clinical_baseline.ts", "category": "Clinical Baseline", "declaredCount": 13 }
+  ],
+  "diseaseModules": [
+    { "id": "Type2DiabetesMellitus", "path": "worlds/clinical_suite/diseases/type2_diabetes.ts", "name": "Type 2 Diabetes Mellitus" },
+    { "id": "CoronaryArteryDisease", "path": "worlds/clinical_suite/diseases/coronary_artery_disease.ts", "name": "Coronary Artery Disease" },
+    { "id": "ChronicObstructivePulmonaryDisease", "path": "worlds/clinical_suite/diseases/copd.ts", "name": "Chronic Obstructive Pulmonary Disease" },
+    { "id": "ChronicKidneyDisease", "path": "worlds/clinical_suite/diseases/ckd.ts", "name": "Chronic Kidney Disease" },
+    { "id": "MajorDepressiveDisorder", "path": "worlds/clinical_suite/diseases/mdd.ts", "name": "Major Depressive Disorder" }
+  ],
+  "attributeCatalogPath": "worlds/clinical_suite/attribute_catalog.json",
+  "acceptance": { "attributesAccepted": 3, "attributesAttempted": 3, "diseasesAccepted": 5, "diseasesAttempted": 5 }
+}
