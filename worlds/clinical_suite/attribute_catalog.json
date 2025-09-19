@@ -1,0 +1,37 @@
+{
+  "catalog": [
+    { "key": "AGE_YEARS", "type": "number", "durability": "intrinsic", "limits": { "min": 0, "max": 120 }, "description": "Age in years at simulation start", "category": "Demographics" },
+    { "key": "SEX_AT_BIRTH", "type": "string", "durability": "intrinsic", "description": "Sex assigned at birth", "category": "Demographics" },
+    { "key": "RACE", "type": "string", "durability": "intrinsic", "description": "Self-identified race", "category": "Demographics" },
+    { "key": "ETHNICITY", "type": "string", "durability": "intrinsic", "description": "Ethnicity per OMB standards", "category": "Demographics" },
+    { "key": "HOUSEHOLD_INCOME", "type": "number", "durability": "semi_durable", "limits": { "min": 0, "max": 250000 }, "description": "Estimated annual household income", "category": "Demographics" },
+    { "key": "HOUSEHOLD_SIZE", "type": "number", "durability": "semi_durable", "limits": { "min": 1, "max": 10 }, "description": "Number of household members", "category": "Demographics" },
+    { "key": "EDUCATION_LEVEL", "type": "string", "durability": "semi_durable", "description": "Highest completed education", "category": "Demographics" },
+    { "key": "INSURANCE_TYPE", "type": "string", "durability": "semi_durable", "description": "Primary health insurance coverage", "category": "Demographics" },
+    { "key": "FAMILY_HISTORY_DIABETES", "type": "boolean", "durability": "intrinsic", "description": "Family history of type 2 diabetes", "category": "Demographics" },
+    { "key": "FAMILY_HISTORY_CAD", "type": "boolean", "durability": "intrinsic", "description": "Family history of coronary artery disease", "category": "Demographics" },
+
+    { "key": "SMOKING_STATUS", "type": "string", "durability": "semi_durable", "description": "Smoking status (never/former/current)", "category": "Lifestyle" },
+    { "key": "SMOKING_PACK_YEARS", "type": "number", "durability": "semi_durable", "limits": { "min": 0, "max": 120 }, "description": "Cumulative pack-year exposure", "category": "Lifestyle" },
+    { "key": "ALCOHOL_USE_LEVEL", "type": "string", "durability": "semi_durable", "description": "Baseline alcohol consumption level", "category": "Lifestyle" },
+    { "key": "PHYSICAL_ACTIVITY_LEVEL", "type": "number", "durability": "semi_durable", "limits": { "min": 0, "max": 10 }, "description": "Weekly physical activity score", "category": "Lifestyle" },
+    { "key": "DIET_QUALITY_SCORE", "type": "number", "durability": "semi_durable", "limits": { "min": 0, "max": 100 }, "description": "Composite diet quality score", "category": "Lifestyle" },
+    { "key": "SLEEP_HOURS", "type": "number", "durability": "semi_durable", "limits": { "min": 3, "max": 12 }, "description": "Average nightly sleep duration", "category": "Lifestyle" },
+    { "key": "OCCUPATIONAL_EXPOSURE_DUST", "type": "boolean", "durability": "semi_durable", "description": "Occupational exposure to dust or fumes", "category": "Lifestyle" },
+    { "key": "MENTAL_HEALTH_SUPPORT", "type": "string", "durability": "semi_durable", "description": "Baseline access to supportive counseling", "category": "Lifestyle" },
+
+    { "key": "BMI", "type": "number", "durability": "semi_durable", "limits": { "min": 15, "max": 60 }, "description": "Body mass index", "category": "Clinical Baseline" },
+    { "key": "SYSTOLIC_BP", "type": "number", "durability": "semi_durable", "limits": { "min": 90, "max": 220 }, "description": "Systolic blood pressure (mmHg)", "category": "Clinical Baseline" },
+    { "key": "DIASTOLIC_BP", "type": "number", "durability": "semi_durable", "limits": { "min": 50, "max": 140 }, "description": "Diastolic blood pressure (mmHg)", "category": "Clinical Baseline" },
+    { "key": "LDL_CHOLESTEROL", "type": "number", "durability": "semi_durable", "limits": { "min": 40, "max": 260 }, "description": "Low-density lipoprotein cholesterol", "category": "Clinical Baseline" },
+    { "key": "HDL_CHOLESTEROL", "type": "number", "durability": "semi_durable", "limits": { "min": 20, "max": 120 }, "description": "High-density lipoprotein cholesterol", "category": "Clinical Baseline" },
+    { "key": "TRIGLYCERIDES", "type": "number", "durability": "semi_durable", "limits": { "min": 40, "max": 600 }, "description": "Triglyceride level (mg/dL)", "category": "Clinical Baseline" },
+    { "key": "FASTING_GLUCOSE", "type": "number", "durability": "semi_durable", "limits": { "min": 60, "max": 350 }, "description": "Fasting plasma glucose (mg/dL)", "category": "Clinical Baseline" },
+    { "key": "HBA1C", "type": "number", "durability": "semi_durable", "limits": { "min": 4.5, "max": 14 }, "description": "Hemoglobin A1c (%)", "category": "Clinical Baseline" },
+    { "key": "EGFR", "type": "number", "durability": "stateful", "limits": { "min": 5, "max": 140 }, "description": "Estimated glomerular filtration rate (mL/min/1.73m^2)", "category": "Clinical Baseline" },
+    { "key": "SERUM_CREATININE", "type": "number", "durability": "semi_durable", "limits": { "min": 0.4, "max": 8 }, "description": "Serum creatinine (mg/dL)", "category": "Clinical Baseline" },
+    { "key": "URINE_ALBUMIN", "type": "number", "durability": "semi_durable", "limits": { "min": 0, "max": 800 }, "description": "Urine albumin-to-creatinine ratio (mg/g)", "category": "Clinical Baseline" },
+    { "key": "RESPIRATORY_CAPACITY", "type": "number", "durability": "stateful", "limits": { "min": 30, "max": 120 }, "description": "FEV1 percent predicted", "category": "Clinical Baseline" },
+    { "key": "PHQ9_SCORE", "type": "number", "durability": "semi_durable", "limits": { "min": 0, "max": 27 }, "description": "PHQ-9 screening score", "category": "Clinical Baseline" }
+  ]
+}
