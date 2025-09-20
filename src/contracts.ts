@@ -63,8 +63,8 @@ export interface SimContext {
   y2t: (y: number) => number;
   rngUniform: () => number;
   rngNormal: (mean?: number, sd?: number) => number;
-  emit: (e: Event) => void;
-  schedule: (delayYears: number, e: Event) => void;
+  emit: (e: Omit<Event, "t">) => void;
+  schedule: (delayYears: number, e: Omit<Event, "t">) => void;
   get: (key: string) => number | undefined;
   set: (key: string, val: number) => void;
   attr: (id: string) => AttrValue | undefined;

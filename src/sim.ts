@@ -15,7 +15,7 @@ class PQ<T>{ data:{t:number;item:T}[]=[]; push(t:number,item:T){const r={t,item}
   while(lo<hi){ const mid=(lo+hi)>>>1; if(this.data[mid].t<=t) lo=mid+1; else hi=mid; } this.data.splice(lo,0,r);} 
   pop(){ const entry = this.data.shift(); return entry ? entry.item : undefined; } get length(){return this.data.length;} }
 
-type PendingEv = { t: number; e: Event };
+type PendingEv = { t: number; e: Omit<Event, "t"> };
 type DiseaseRuntime = { id: string; mod: any };
 
 function clampVal(v: any, lim?: AttrLimits): any {
@@ -76,11 +76,12 @@ export async function runSimulation(opts: SimulationOptions) {
       if (g.signals) Object.assign(signals, g.signals);
       if (g.sexAtBirth && sexAtBirth==="U") sexAtBirth = g.sexAtBirth;
     }
-    if (attributes["AGE_YEARS"] == null) attributes["AGE_YEARS"] = 18;
+    const startAge = typeof attributes["AGE_YEARS"] === "number" ? (attributes["AGE_YEARS"] as number) : 18;
+    attributes["AGE_YEARS"] = startAge;
     if (!("SEX_AT_BIRTH" in attributes)) attributes["SEX_AT_BIRTH"] = sexAtBirth;
 
     const patient: PatientSnapshot = {
-      id: pid, birthYear, ageYears: 0,
+      id: pid, birthYear, ageYears: startAge,
       sexAtBirth: (attributes["SEX_AT_BIRTH"] as any) ?? "U",
       attributes, signals, diagnoses: {}, medsOn: {},
       rngSeed: prng.next()*1e9|0
@@ -90,11 +91,20 @@ export async function runSimulation(opts: SimulationOptions) {
     const Q = new PQ<PendingEv>();
     const y2t = (y:number)=>y;
     const ctx: SimContext = {
-      now: 0, y2t,
+      now: startAge, y2t,
       rngUniform: ()=>prng.uniform(),
       rngNormal: (m=0,s=1)=>prng.normal(m,s),
-      emit: (e:Event)=>{ events.push({ ...e, t: ctx.now }); },
-      schedule: (delayYears:number, e:Event)=>{ Q.push(ctx.now+delayYears, { t: ctx.now+delayYears, e }); },
+      emit: (e:Event)=>{
+        const ev = { ...e, t: ctx.now } as Event;
+        events.push(ev);
+        if (ev.type === "diagnosis") patient.diagnoses[ev.payload.code] = 1;
+        if (ev.type === "medication") patient.medsOn[ev.payload.drug] = 1;
+      },
+      schedule: (delayYears:number, e:Omit<Event, "t">)=>{
+        const delay = Math.max(0, delayYears);
+        const target = ctx.now + delay;
+        Q.push(target, { t: target, e });
+      },
       get: (k:string)=>patient.signals[k],
       set: (k:string,v:number)=>{ patient.signals[k]=v; },
       attr: (id:string)=>patient.attributes[id],
@@ -103,8 +113,38 @@ export async function runSimulation(opts: SimulationOptions) {
     };
 
     // Routine encounters & death
-    for (let y=18;y<95;){ const step=0.6+prng.uniform()*0.6; y+=step; Q.push(y,{t:y,e:{t:y,type:"encounter",payload:{kind:"PCP"}}}); }
-    const death = -Math.log(1-prng.uniform()) / 0.02; if (death < 105) Q.push(death,{t:death,e:{t:death,type:"death",payload:{}}});
+    const maxAge = 115;
+    const scheduleEncounterSeries = (beginAge: number, meanMonths: number) => {
+      const horizon = Math.min(maxAge, startAge + 35);
+      let next = Math.max(beginAge, startAge + 0.25);
+      while (next < horizon) {
+        Q.push(next, { t: next, e: { type: "encounter", payload: { kind: "PCP" } } });
+        const jitter = (prng.uniform() - 0.5) * 0.25; // +/- 3 months jitter
+        const stepYears = Math.max(0.5, meanMonths / 12 + jitter);
+        next += stepYears;
+      }
+    };
+    const youngCadence = startAge < 40 ? 14 : 18;
+    const seniorCadence = startAge >= 65 ? 10 : youngCadence;
+    scheduleEncounterSeries(startAge + prng.uniform(), seniorCadence);
+
+    const sampleDeathAge = () => {
+      const skipChance = Math.min(0.5, Math.max(0.15, 0.36 - Math.max(0, startAge - 35) * 0.0035));
+      if (prng.uniform() < skipChance) return Number.POSITIVE_INFINITY;
+      const mean = 88;
+      const scale = 10;
+      for (let attempt = 0; attempt < 8; attempt++) {
+        const u = prng.uniform();
+        if (u <= 0 || u >= 1) continue;
+        const draw = mean + scale * Math.log(u / (1 - u));
+        if (draw > startAge + 0.75 && draw < maxAge) return draw;
+      }
+      return Number.POSITIVE_INFINITY;
+    };
+    const deathAge = sampleDeathAge();
+    if (Number.isFinite(deathAge)) {
+      Q.push(deathAge, { t: deathAge, e: { type: "death", payload: {} } });
+    }
 
     // Init diseases
     for (const D of diseaseMods) if (typeof D.mod.init === "function") D.mod.init(patient, ctx);
@@ -119,17 +159,22 @@ export async function runSimulation(opts: SimulationOptions) {
     recomputeEligibility();
 
     // Sim loop
-    let lastT = 0;
+    let lastT = startAge;
     while (Q.length){
       const { t, e } = Q.pop()!;
       const months = Math.max(0, Math.floor((t - lastT)*12));
       for (let m=0;m<months;m++){
-        patient.ageYears = lastT + (m+1)/12; ctx.now = patient.ageYears;
+        patient.ageYears = lastT + (m+1)/12;
+        patient.attributes["AGE_YEARS"] = patient.ageYears;
+        ctx.now = patient.ageYears;
         for (const mod of attrMods) if (typeof mod.update === "function") { try { mod.update(patient, ctx, 1/12); } catch {} }
         recomputeEligibility();
         for (const D of diseaseMods) if (eCache[D.id]) { try { D.mod.step(patient, ctx); } catch {} }
       }
-      lastT = t; patient.ageYears = t; ctx.now = t;
+      lastT = t; patient.ageYears = t; patient.attributes["AGE_YEARS"] = patient.ageYears; ctx.now = t;
+      patient.signals["core_lastEventAge"] = t;
+      if (e.type === "encounter") patient.signals["core_lastEncounterAge"] = t;
+      if (e.type === "death") patient.signals["core_deathAge"] = t;
       events.push({ ...e, t });
       if (e.type === "death") break;
       if (e.type === "encounter") for (const D of diseaseMods) if (eCache[D.id]) { try { D.mod.step(patient, ctx); } catch {} }

@@ -1,6 +1,6 @@
 {
   "patients": 25,
-  "avgEventsPerPatient": 137.84,
-  "diagnosisEvents": 123,
-  "deathFraction": 0.88
+  "avgEventsPerPatient": 47.68,
+  "diagnosisEvents": 21,
+  "deathFraction": 0.68
 }
