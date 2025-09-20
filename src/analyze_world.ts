@@ -2,7 +2,52 @@
 import { readFile } from "node:fs/promises";
 
 import { runSimulation } from "./sim";
-import { WorldFile, Event } from "./contracts";
+import type { WorldFile } from "./contracts";
+import type { ClinicalEvent } from "./events";
+
+const DAYS_PER_YEAR = 365;
+
+type LegacyEvent =
+  | { t: number; type: "encounter"; payload: { kind: "PCP" | "ED" | "Inpatient" | "Specialty" | "Cardio" | "Endo" } }
+  | { t: number; type: "lab"; payload: { id: string; name: string; value: number; unit?: string } }
+  | { t: number; type: "diagnosis"; payload: { code: string; name: string } }
+  | { t: number; type: "medication"; payload: { drug: string; dose?: string } }
+  | { t: number; type: "procedure"; payload: { code: string; name: string } }
+  | { t: number; type: "death"; payload: {} };
+
+function toLegacyEvent(event: ClinicalEvent): LegacyEvent | null {
+  const tYears = event.t / DAYS_PER_YEAR;
+  switch (event.kind) {
+    case "EncounterFinished": {
+      const kind = typeof event.meta?.type === "string" ? (event.meta.type as any) : "PCP";
+      return { t: tYears, type: "encounter", payload: { kind } };
+    }
+    case "ObservationResulted": {
+      const loinc = String(event.meta?.loinc ?? "");
+      const value = typeof event.meta?.value === "number" ? (event.meta.value as number) : NaN;
+      const unit = typeof event.meta?.unit === "string" ? (event.meta.unit as string) : "";
+      return { t: tYears, type: "lab", payload: { id: loinc, name: loinc, value, unit } };
+    }
+    case "ConditionOnset": {
+      const code = String(event.meta?.icd10 ?? "UNKNOWN");
+      const name = String(event.meta?.label ?? code);
+      return { t: tYears, type: "diagnosis", payload: { code, name } };
+    }
+    case "MedicationStarted": {
+      const drug = String(event.meta?.rxNorm ?? "Unknown");
+      const dose = typeof event.meta?.dose === "string" ? (event.meta.dose as string) : undefined;
+      return { t: tYears, type: "medication", payload: { drug, dose } };
+    }
+    case "ProcedurePerformed": {
+      const code = String(event.meta?.code ?? "UNKNOWN");
+      return { t: tYears, type: "procedure", payload: { code, name: code } };
+    }
+    case "Death":
+      return { t: tYears, type: "death", payload: {} };
+    default:
+      return null;
+  }
+}
 
 type DiseaseConfig = {
   label: string;
@@ -10,13 +55,13 @@ type DiseaseConfig = {
   labIds: string[];
   medications: string[];
   encounterKinds?: Array<"PCP" | "ED" | "Inpatient" | "Specialty">;
-  extra?: (patient: SimPatientView, events: Event[]) => Record<string, number | Record<string, number>>;
+  extra?: (patient: SimPatientView, events: LegacyEvent[]) => Record<string, number | Record<string, number>>;
 };
 
 type SimPatientView = {
   id: string;
   attrs: Record<string, number | string | boolean>;
-  events: Event[];
+  events: ClinicalEvent[];
 };
 
 type SummaryRow = {
@@ -85,9 +130,20 @@ function mean(values: number[]): number | null {
   return values.reduce((a, b) => a + b, 0) / values.length;
 }
 
+function baseAge(attrs: Record<string, number | string | boolean>): number {
+  if (typeof attrs.AGE_YEARS_BASELINE === "number") return attrs.AGE_YEARS_BASELINE as number;
+  if (typeof attrs.AGE_YEARS === "number") return attrs.AGE_YEARS as number;
+  const ageYr = (attrs as any).ageYr;
+  return typeof ageYr === "number" ? (ageYr as number) : 0;
+}
+
 function summarizeDisease(patients: SimPatientView[], cfg: DiseaseConfig, total: number): SummaryRow {
-  const diagnosedPatients = patients.filter((p) =>
-    p.events.some((e) => e.type === "diagnosis" && cfg.codes.includes(e.payload.code))
+  const enriched = patients.map((p) => ({
+    patient: p,
+    legacy: p.events.map(toLegacyEvent).filter((e): e is LegacyEvent => e !== null)
+  }));
+  const diagnosedPatients = enriched.filter(({ legacy }) =>
+    legacy.some((e) => e.type === "diagnosis" && cfg.codes.includes(e.payload.code))
   );
   const diagCount = diagnosedPatients.length;
   const diagnosisAges: number[] = [];
@@ -103,14 +159,14 @@ function summarizeDisease(patients: SimPatientView[], cfg: DiseaseConfig, total:
     for (const kind of cfg.encounterKinds) encounterRate[kind] = 0;
   }
 
-  for (const patient of diagnosedPatients) {
-    const ageBase = typeof patient.attrs.AGE_YEARS === "number" ? (patient.attrs.AGE_YEARS as number) : 0;
-    const diagEvent = patient.events.find((e) => e.type === "diagnosis" && cfg.codes.includes(e.payload.code));
+  for (const { patient, legacy } of diagnosedPatients) {
+    const ageBase = baseAge(patient.attrs);
+    const diagEvent = legacy.find((e) => e.type === "diagnosis" && cfg.codes.includes(e.payload.code));
     if (diagEvent) diagnosisAges.push(ageBase + diagEvent.t);
-    const followYears = Math.max(1, patient.events.length ? patient.events[patient.events.length - 1].t : 0);
+    const followYears = Math.max(1, legacy.length ? legacy[legacy.length - 1].t : 0);
 
     const lastLabs: Record<string, number> = {};
-    for (const event of patient.events) {
+    for (const event of legacy) {
       if (event.type === "lab" && cfg.labIds.includes(event.payload.id)) {
         lastLabs[event.payload.id] = event.payload.value;
       }
@@ -122,7 +178,7 @@ function summarizeDisease(patients: SimPatientView[], cfg: DiseaseConfig, total:
     }
 
     const meds = new Set(
-      patient.events.filter((e) => e.type === "medication" && cfg.medications.includes(e.payload.drug)).map((e) => e.payload.drug)
+      legacy.filter((e) => e.type === "medication" && cfg.medications.includes(e.payload.drug)).map((e) => e.payload.drug)
     );
     for (const med of meds) {
       medCoverage[med] = (medCoverage[med] ?? 0) + 1;
@@ -131,7 +187,7 @@ function summarizeDisease(patients: SimPatientView[], cfg: DiseaseConfig, total:
     if (cfg.encounterKinds) {
       const counts: Record<string, number> = {};
       for (const kind of cfg.encounterKinds) counts[kind] = 0;
-      for (const event of patient.events) {
+      for (const event of legacy) {
         if (event.type === "encounter" && cfg.encounterKinds.includes(event.payload.kind)) {
           counts[event.payload.kind] += 1;
         }
@@ -142,7 +198,7 @@ function summarizeDisease(patients: SimPatientView[], cfg: DiseaseConfig, total:
     }
 
     if (cfg.extra) {
-      const extra = cfg.extra(patient, patient.events);
+      const extra = cfg.extra(patient, legacy);
       for (const [key, value] of Object.entries(extra)) {
         const existing = extraSummaries[key];
         if (typeof value === "number") {
@@ -230,7 +286,10 @@ async function main() {
   const patientsRaw = await runSimulation({ n, world });
   const patients: SimPatientView[] = patientsRaw.map((p: any) => ({ id: p.id, attrs: p.attrs, events: p.events }));
   const totalEvents = patients.reduce((sum, p) => sum + p.events.length, 0);
-  const encounterCounts = patients.map((p) => p.events.filter((e) => e.type === "encounter").length);
+  const encounterCounts = patients.map((p) => {
+    const legacy = p.events.map(toLegacyEvent).filter((e): e is LegacyEvent => e !== null);
+    return legacy.filter((e) => e.type === "encounter").length;
+  });
 
   const diseaseSummaries: Record<string, SummaryRow> = {};
   for (const [key, cfg] of Object.entries(diseases)) {

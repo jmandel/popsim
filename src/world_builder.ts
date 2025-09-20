@@ -185,10 +185,10 @@ async function validateWorldQuick(world: WorldFile, worldDir: string) {
     const { runSimulation } = await import("./sim");
     const sample = await runSimulation({ n: 50, world, llmRuntime: false });
     const eventCounts = sample.map((p: any) => p.events.length);
-    const avgEvents = eventCounts.reduce((a: number, b: number) => a + b, 0) / eventCounts.length;
-    const deathFrac = sample.filter((p: any) => p.events.some((e: any) => e.type === "death")).length / sample.length;
+    const avgEvents = eventCounts.reduce((a: number, b: number) => a + b, 0) / Math.max(1, eventCounts.length);
+    const deathFrac = sample.filter((p: any) => p.events.some((e: any) => e.kind === 'Death')).length / Math.max(1, sample.length);
     const dxCount = sample.reduce(
-      (a: number, p: any) => a + p.events.filter((e: any) => e.type === "diagnosis").length,
+      (a: number, p: any) => a + p.events.filter((e: any) => e.kind === 'ConditionOnset').length,
       0
     );
     const metrics = { avgEventsPerPatient: avgEvents, deathFraction: deathFrac, diagnosisEvents: dxCount };
