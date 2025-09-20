@@ -57,9 +57,12 @@ async function handleSimulate(options: CLIOptions) {
   const worldPath = typeof options.world === "string" ? options.world : "out/world/world.json";
   const n = Number(options.n ?? 100);
   const outPath = typeof options.out === "string" ? options.out : undefined;
+  const explain = options.explain === true || options.explain === "true";
+  const horizon = options.horizonYears ?? options.horizon;
+  const horizonYears = horizon != null ? Number(horizon) : undefined;
   const data = await readFile(worldPath, "utf-8");
   const world = JSON.parse(data) as WorldFile;
-  const results = await runSimulation({ n, world });
+  const results = await runSimulation({ n, world, explain, horizonYears });
   const summary = { patients: results.length };
   if (outPath) {
     await mkdir(dirname(outPath), { recursive: true });
